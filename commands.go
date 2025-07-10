@@ -43,6 +43,13 @@ var commands = map[string]cliCommand{
 		description: "Get the previous list of locations",
 		callback:    commandMapb,
 	},
+	/*
+		"explore": {
+			name:        "explore",
+			description: "Get a list of pokemon in a location",
+			callback:    commandExplore,
+		},
+	*/
 }
 
 func commandExit(c *config) error {

@@ -5,29 +5,42 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"pokedexcli/internal/pokecache"
+	"time"
 )
+
+var cache = pokecache.NewCache(5 * time.Minute)
 
 func MakeRequest(url string) error {
 	fmt.Println("Fetching data from:", url)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
+
+	// Check if the data is cached
+	cachedData, ok := cache.Get(url)
+	// If not cached, make the HTTP request
+	if !ok {
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return err
+		}
+
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		} else if res.StatusCode != http.StatusOK {
+			return fmt.Errorf("error: %s", res.Status)
+		}
+		defer res.Body.Close()
+
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+
+		cache.Add(url, body)
+		cachedData = body
 	}
 
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	} else if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("error: %s", res.Status)
-	}
-	defer res.Body.Close()
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(body, &JsonMapData)
+	err := json.Unmarshal(cachedData, &JsonMapData)
 	if err != nil {
 		return err
 	}

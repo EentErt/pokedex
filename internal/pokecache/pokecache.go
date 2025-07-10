@@ -13,6 +13,7 @@ type Cache struct {
 func NewCache(t time.Duration) *Cache {
 	cache := Cache{}
 	go cache.reapLoop(t)
+	cache.entries = make(map[string]cacheEntry)
 	return &cache
 }
 
@@ -23,12 +24,13 @@ type cacheEntry struct {
 
 func (c *Cache) Add(key string, val []byte) {
 	c.mu.Lock()
-	defer c.mu.Unlock()
 
 	c.entries[key] = cacheEntry{
 		createdAt: time.Now(),
 		val:       val,
 	}
+
+	c.mu.Unlock()
 }
 
 func (c *Cache) Get(key string) ([]byte, bool) {
@@ -48,12 +50,13 @@ func (c *Cache) reapLoop(t time.Duration) {
 	defer ticker.Stop()
 
 	for {
+		currentTime := <-ticker.C
+		c.mu.Lock()
 		for key, entry := range c.entries {
-			c.mu.Lock()
-			currentTime := <-ticker.C
 			if currentTime.Sub(entry.createdAt) > t {
 				delete(c.entries, key)
 			}
 		}
+		c.mu.Unlock()
 	}
 }
