@@ -34,7 +34,7 @@ func main() {
 
 			err := commands[inputText[0]].callback(&cfg, args)
 			if err != nil {
-				fmt.Printf("Error: %s\n", err)
+				fmt.Println(err)
 			}
 		}
 	}

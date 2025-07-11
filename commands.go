@@ -22,6 +22,8 @@ var cfg = config{
 	previous: "",
 }
 
+var pokedex = make(map[string]Requests.JsonPokemon)
+
 var commands = map[string]cliCommand{
 	"exit": {
 		name:        "exit",
@@ -47,6 +49,21 @@ var commands = map[string]cliCommand{
 		name:        "explore",
 		description: "Get a list of pokemon in a location",
 		callback:    commandExplore,
+	},
+	"catch": {
+		name:        "catch",
+		description: "Catch a pokemon",
+		callback:    commandCatch,
+	},
+	"inspect": {
+		name:        "inspect",
+		description: "Inspect a pokemon in your pokedex",
+		callback:    commandInspect,
+	},
+	"pokedex": {
+		name:        "pokedex",
+		description: "View your caught pokemon",
+		callback:    commandPokedex,
 	},
 }
 
@@ -128,4 +145,43 @@ func printPokemon() {
 	for _, pokemon := range Requests.JsonExploreData.PokemonEncounters {
 		fmt.Printf(" - %s\n", pokemon.Pokemon.Name)
 	}
+}
+
+func commandCatch(c *config, pokemon string) error {
+	if err := Requests.CatchRequest(pokemon); err != nil {
+		return err
+	}
+
+	fmt.Printf("%s was caught!\n", pokemon)
+	addToPokedex(pokemon)
+	return nil
+}
+
+func addToPokedex(pokemon string) {
+	pokedex[pokemon] = Requests.JsonPokemonData
+}
+
+func commandInspect(c *config, pokemon string) error {
+	if data, ok := pokedex[pokemon]; ok {
+		fmt.Printf("Name: %s\n", data.Name)
+		fmt.Printf("Height: %d\n", data.Height)
+		fmt.Printf("Weight: %d\n", data.Weight)
+		fmt.Println("Stats:")
+		for _, stat := range data.Stats {
+			fmt.Printf("  -%s: %d\n", stat.Stat.Name, stat.BaseStat)
+		}
+		fmt.Println("Types:")
+		for _, t := range data.Types {
+			fmt.Printf("  -%s\n", t.Type.Name)
+		}
+		return nil
+	}
+	return fmt.Errorf("you have not caught that pokemon")
+}
+
+func commandPokedex(c *config, arg string) error {
+	for _, pokemon := range pokedex {
+		fmt.Printf(" - %s\n", pokemon.Name)
+	}
+	return nil
 }
