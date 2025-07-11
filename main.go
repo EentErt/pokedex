@@ -21,11 +21,18 @@ func main() {
 		fmt.Print("Pokedex > ")
 		if buffer.Scan() {
 			inputText := cleanInput(buffer.Text())
+			args := ""
+
 			if _, ok := commands[inputText[0]]; !ok {
 				fmt.Println("Unknown command. Type 'help' for a list of commands.")
 				continue
 			}
-			err := commands[inputText[0]].callback(&cfg)
+
+			if len(inputText) > 1 {
+				args = inputText[1]
+			}
+
+			err := commands[inputText[0]].callback(&cfg, args)
 			if err != nil {
 				fmt.Printf("Error: %s\n", err)
 			}

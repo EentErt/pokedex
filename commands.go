@@ -9,7 +9,7 @@ import (
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(*config) error
+	callback    func(*config, string) error
 }
 
 type config struct {
@@ -18,7 +18,7 @@ type config struct {
 }
 
 var cfg = config{
-	next:     "https://pokeapi.co/api/v2/location-area/?limit=20",
+	next:     "https://pokeapi.co/api/v2/location-area/",
 	previous: "",
 }
 
@@ -43,27 +43,25 @@ var commands = map[string]cliCommand{
 		description: "Get the previous list of locations",
 		callback:    commandMapb,
 	},
-	/*
-		"explore": {
-			name:        "explore",
-			description: "Get a list of pokemon in a location",
-			callback:    commandExplore,
-		},
-	*/
+	"explore": {
+		name:        "explore",
+		description: "Get a list of pokemon in a location",
+		callback:    commandExplore,
+	},
 }
 
-func commandExit(c *config) error {
+func commandExit(c *config, arg string) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	defer os.Exit(0)
 	return nil
 }
 
-func commandHelp(c *config) error {
+func commandHelp(c *config, arg string) error {
 	fmt.Print("Welcome to the Pokedex!\nUsage:\n\nhelp: Displays a help message\nexit: Exit the Pokedex\n")
 	return nil
 }
 
-func commandMap(c *config) error {
+func commandMap(c *config, arg string) error {
 	err := Requests.MakeRequest(c.next)
 	if err != nil {
 		return err
@@ -84,7 +82,7 @@ func commandMap(c *config) error {
 	return nil
 }
 
-func commandMapb(c *config) error {
+func commandMapb(c *config, arg string) error {
 	if c.previous == "" {
 		fmt.Println("you're on the first page")
 		return nil
@@ -113,5 +111,21 @@ func commandMapb(c *config) error {
 func printMap() {
 	for _, item := range Requests.JsonMapData.Results {
 		fmt.Println(item.Name)
+	}
+}
+
+func commandExplore(c *config, arg string) error {
+	if err := Requests.ExploreRequest(arg); err != nil {
+		return err
+	}
+
+	printPokemon()
+	return nil
+}
+
+func printPokemon() {
+	fmt.Println("Found Pokemon:")
+	for _, pokemon := range Requests.JsonExploreData.PokemonEncounters {
+		fmt.Printf(" - %s\n", pokemon.Pokemon.Name)
 	}
 }
